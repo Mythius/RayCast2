@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Ray Trace 2</title>
+	<style>
+		canvas{
+			background-color: black;
+		}
+	</style>
+	<script src=helpers.js></script>
+	<script src=input.js></script>
+</head>
+<body>
+	<canvas width=700 height=500></canvas>
+	<br>
+	<input type="file" accept=.pd2>
+	<script src=raytrace.js></script>
+	<script>
+		var canvas = obj('canvas');
+		var ctx = canvas.getContext('2d');
+		ctx.translate(-.5,-.5);
+
+		upload(obj('input'),data=>{
+			lines = JSON.parse(data);
+			for(let l of lines) addPath(l);
+		})
+
+		var MAP = new Path2D;
+
+		let mode = 'r';
+
+		mouse.start(canvas);
+		keys.start();
+
+		let ms;
+
+		if(true){
+			fetch('level.pd2').then(e=>{
+				e.json().then(data=>{
+					lines = data;
+					for(let l of data){
+						addPath(l);
+					}
+				});
+			});
+		}
+
+
+		addPath('rect 0 0 700 4')
+		addPath('rect 0 0 4 500')
+		addPath('rect 0 498 702 4')
+		addPath('rect 698 0 4 502')
+
+		var camera = new Camera;
+		camera.map = MAP;
+
+
+		let lines = [];
+
+		let view = '2D';
+
+		var floor = ctx.createRadialGradient(350,460,5,350,1000,775);
+		floor.addColorStop(1, "black");
+		floor.addColorStop(.4, "green");
+		floor.addColorStop(0, "white");
+
+		let img = create('img');
+		img.src = 'https://cdn.theatlantic.com/thumbor/VCoUZjXa6W3jOoQ9yG4pFlR59LY=/80x43:2688x1999/1200x900/media/img/mt/2015/10/Cygnus_v3_BandW/original.jpg';
+
+		function loop(){
+			ctx.clearRect(-2,-2,canvas.width+2,canvas.height+2);
+			ctx.lineWidth = 3;
+
+
+
+			if(view == '2D'){
+				ctx.fillStyle = 'green';
+				ctx.fill(MAP,'nonzero');
+				camera.update(false);
+				camera.draw();
+				readDraw();
+			} else {
+				draw3D();
+			}
+
+
+			if(keys.down(' ')){
+				keys.keys[' '] = false;
+				view = view == '2D' ? '3D' : '2D';
+			}
+
+			if(keys.down('f11')){
+				keys.keys['f11'] = false;
+				canvas.requestFullscreen();
+			}
+
+
+			setTimeout(loop,1000/30);
+		}
+
+		loop();
+
+		function draw3D(){
+
+			ctx.beginPath();
+			ctx.drawImage(img,0,0,700,250);
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.fillStyle = floor;
+			ctx.rect(0,250,700,250);
+			ctx.fill();
+			camera.update();
+		}
+
+
+
+		function addPath(path_code,path=MAP){
+			path_code = path_code.replaceAll('mp',Math.PI*2);
+			let args = path_code.split(' ');
+			let func = args.shift();
+			if(func == 'arc'){
+				path.moveTo(Number(args[0])+Number(args[2]),+args[1]);
+			}
+			path[func](...args);
+		}
+
+		function readDraw(){
+			if(keys.down('r')) mode = 'r';
+			if(keys.down('c')) mode = 'c';
+			if(keys.down('d') && keys.down('control')){
+				download('level.pd2',JSON.stringify(lines));
+				keys.keys['d'] = false;
+			}
+			ctx.beginPath();
+			if(mouse.down){
+				if(!ms){
+					ms = JSON.parse(JSON.stringify(mouse.pos));
+				} else {
+					if(mode == 'r'){
+						ctx.rect(ms.x,ms.y,mouse.pos.x-ms.x,mouse.pos.y-ms.y);
+					} else if (mode == 'c'){
+						let x = ms.x;
+						let y = ms.y;
+						let r = distance(ms.x,ms.y,mouse.pos.x,mouse.pos.y);
+						ctx.arc(x,y,r,0,Math.PI*2);
+					}
+					ctx.fill();
+				}
+			} else {
+				if(ms){
+					let path_code = '';
+					if(mode == 'r'){
+						path_code = 'rect '+[ms.x,ms.y,mouse.pos.x-ms.x,mouse.pos.y-ms.y].join(' ');
+					} else if(mode == 'c'){
+						path_code = 'arc '+[ms.x,ms.y,distance(ms.x,ms.y,mouse.pos.x,mouse.pos.y),0,'mp'].join(' ');
+					}
+					lines.push(path_code);
+					addPath(path_code);
+					ms = undefined;
+				}
+			}
+		}
+
+
+	</script>
+</body>
+</html>
