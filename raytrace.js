@@ -1,4 +1,5 @@
 // (function(t){
+
 class Camera{
 	constructor(fov=140,res=1){
 		this.show_2D_MAP = false;
@@ -10,6 +11,7 @@ class Camera{
 		this.pt = {x:0,y:0};
 		this.dir = 0;
 		this.show = false;
+		this.DV;
 	}
 	castRay(){
 
@@ -68,9 +70,10 @@ class Camera{
 		}
 		let r = 700 / rays.length;
 		this.show = false;
+		this.DV = DV;
 		if(draw3d){
 			for(let i=0;i<rays.length;i++){
-				let h = 20*(DV/rays[i].d);
+				let h = 20*(DV/rays[i].d); // HIGHT FORMULA (height of walls)
 				let sy = h/2;
 				ctx.fillStyle = `hsl(${rays[i].c},75%,${80-(rays[i].d*.4)}%)`;
 				ctx.fillRect(i*r,250-sy,r+1,h);
@@ -111,9 +114,46 @@ class Camera{
 	}
 }
 
-
-function wait(){
-	return new Promise(res=>{setTimeout(res,1)});
+class Entity{
+	constructor(x,y,size=5){
+		this.x = x;
+		this.y = y;
+		this.size = size;
+		this.image;
+	}
+	isPointInPath(x,y){
+		return distance(this.x,this.y,x,y) <= size;
+	}
+	draw(){
+		ctx.beginPath();
+		ctx.fillStyle = 'cyan';
+		ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+		ctx.fill();
+	}
+	calculate3Dpos(camera){
+		let cdir = (((camera.dir+camera.fov/1.53)%360) * Math.PI / 180) * -1;
+		let tx = this.x - camera.x;
+		let ty = this.y - camera.y;
+		let vx = (tx*Math.cos(cdir)) - (ty*Math.sin(cdir));
+		let vy = (tx*Math.sin(cdir)) + (ty*Math.cos(cdir));
+		this.vx = vx; // x value (left / right)
+		this.vy = vy; // distance from camera
+	}
+	draw3D(camera){
+		this.calculate3Dpos(camera);
+		let DV = camera.DV;
+		let d = this.vy;
+		let h = 20*(DV/d);
+		let x = this.vx*(DV/d);
+		let y = 250;
+		this.threedata = {d,h,x,y,DV};
+		if(h < 0) return;
+		h = h*.6;
+		ctx.drawImage(this.image,(x-h/2)+350,y,h,h);
+	}
 }
+
+
+
 
 // })(this);

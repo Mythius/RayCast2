@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html> -->
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -14,6 +14,8 @@
 </head>
 <body>
 	<canvas width=700 height=500></canvas>
+	<br>
+	<p></p>
 	<br>
 	<input type="file" accept=.pd2>
 	<script src=raytrace.js></script>
@@ -47,6 +49,16 @@
 			});
 		}
 
+		function addPath(path_code,path=MAP){
+			path_code = path_code.replaceAll('mp',Math.PI*2);
+			let args = path_code.split(' ');
+			let func = args.shift();
+			if(func == 'arc'){
+				path.moveTo(Number(args[0])+Number(args[2]),+args[1]);
+			}
+			path[func](...args);
+		}
+
 
 		addPath('rect 0 0 700 4')
 		addPath('rect 0 0 4 500')
@@ -66,8 +78,14 @@
 		floor.addColorStop(.4, "green");
 		floor.addColorStop(0, "white");
 
-		let img = create('img');
-		img.src = 'https://cdn.theatlantic.com/thumbor/VCoUZjXa6W3jOoQ9yG4pFlR59LY=/80x43:2688x1999/1200x900/media/img/mt/2015/10/Cygnus_v3_BandW/original.jpg';
+		let bg = create('img');
+		bg.src = 'https://cdn.theatlantic.com/thumbor/VCoUZjXa6W3jOoQ9yG4pFlR59LY=/80x43:2688x1999/1200x900/media/img/mt/2015/10/Cygnus_v3_BandW/original.jpg';
+
+		var entity1 = new Entity(100,100);
+		let e1 = create('img');e1.src='nano.svg';e1.height=200;
+		entity1.image = e1;
+
+		var drawable = [entity1];
 
 		function loop(){
 			ctx.clearRect(-2,-2,canvas.width+2,canvas.height+2);
@@ -81,6 +99,7 @@
 				camera.update(false);
 				camera.draw();
 				readDraw();
+				for(let d of drawable) d.draw();
 			} else {
 				draw3D();
 			}
@@ -105,27 +124,25 @@
 		function draw3D(){
 
 			ctx.beginPath();
-			ctx.drawImage(img,0,0,700,250);
+			ctx.drawImage(bg,0,0,702,250);
 			ctx.fill();
 
 			ctx.beginPath();
 			ctx.fillStyle = floor;
-			ctx.rect(0,250,700,250);
+			ctx.rect(0,250,702,250);
 			ctx.fill();
 			camera.update();
-		}
 
-
-
-		function addPath(path_code,path=MAP){
-			path_code = path_code.replaceAll('mp',Math.PI*2);
-			let args = path_code.split(' ');
-			let func = args.shift();
-			if(func == 'arc'){
-				path.moveTo(Number(args[0])+Number(args[2]),+args[1]);
+			for(let d of drawable){
+				d.draw3D(camera);
 			}
-			path[func](...args);
+
+			obj('p').innerHTML = JSON.stringify(entity1.threedata);
 		}
+
+
+
+
 
 		function readDraw(){
 			if(keys.down('r')) mode = 'r';
