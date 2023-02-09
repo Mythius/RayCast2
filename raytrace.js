@@ -113,11 +113,12 @@ class Camera{
 			ctx.stroke();
 		}
 		let ray_angle = (this.dir - dir) * Math.PI / 180;
-		let corrected_dist = Math.cos(ray_angle) * dist;
+		let corrected_dist = Math.cos(ray_angle) * dist || 0;
 		return {d:corrected_dist,c:color,t:'w'};
 	}
 }
 function drawWall(ray,camera){
+	if(ray.d == 0) ray.d = 1;
 	let h = 20*(camera.DV/ray.d); // HIGHT FORMULA (height of walls)
 	let sy = h/2;
 	let r = camera.res;
