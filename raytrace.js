@@ -1,5 +1,6 @@
 // (function(t){
-
+const DEPTH_SORT = true;
+var drawable = [];
 class Camera{
 	constructor(fov=140,res=1){
 		this.show_2D_MAP = false;
@@ -73,10 +74,13 @@ class Camera{
 		this.DV = DV;
 		if(draw3d){
 			for(let i=0;i<rays.length;i++){
-				let h = 20*(DV/rays[i].d); // HIGHT FORMULA (height of walls)
-				let sy = h/2;
-				ctx.fillStyle = `hsl(${rays[i].c},75%,${80-(rays[i].d*.4)}%)`;
-				ctx.fillRect(i*r,250-sy,r+1,h);
+				rays[i].i=i;
+				if(!DEPTH_SORT){
+					drawWall(rays[i],this);
+				} 
+				else {
+					drawable.push(rays[i]);
+				}
 			}
 		}
 	}
@@ -110,19 +114,27 @@ class Camera{
 		}
 		let ray_angle = (this.dir - dir) * Math.PI / 180;
 		let corrected_dist = Math.cos(ray_angle) * dist;
-		return {d:corrected_dist,c:color};
+		return {d:corrected_dist,c:color,t:'w'};
 	}
 }
-
+function drawWall(ray,camera){
+	let h = 20*(camera.DV/ray.d); // HIGHT FORMULA (height of walls)
+	let sy = h/2;
+	let r = camera.res;
+	ctx.fillStyle = `hsl(${ray.c},75%,${80-(ray.d*.4)}%)`;
+	ctx.fillRect(ray.i*r,250-sy,r+1,h);
+}
 class Entity{
 	constructor(x,y,size=5){
 		this.x = x;
 		this.y = y;
 		this.size = size;
 		this.image;
+		this.d = 0;
+		this.t = 'e';
 	}
 	isPointInPath(x,y){
-		return distance(this.x,this.y,x,y) <= size;
+		return distance(this.x,this.y,x,y) <= this.size;
 	}
 	draw(){
 		ctx.beginPath();
@@ -138,9 +150,9 @@ class Entity{
 		let vy = (tx*Math.sin(cdir)) + (ty*Math.cos(cdir));
 		this.vx = vx; // x value (left / right)
 		this.vy = vy; // distance from camera
+		this.d = -vy;
 	}
 	draw3D(camera){
-		this.calculate3Dpos(camera);
 		let DV = camera.DV;
 		let d = this.vy;
 		let h = 20*(DV/d);
