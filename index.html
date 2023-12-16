@@ -43,7 +43,7 @@
 
     let ms;
 
-    if (true) {
+    if (confirm('Load Level?')) {
         fetch('level.pd2').then(e => {
             e.json().then(data => {
                 lines = data;
